@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Forge — Git-Native Agentic Coding Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --color-yellow: #f5c800;
+      --color-black: #111111;
+      --color-card: #1e1e1e;
+      --color-white: #ffffff;
+      --color-purple: #9b59b6;
+      --color-border: #000000;
+      --color-muted: #888888;
+    }
+    body {
+      background: #080808;
+      color: var(--color-white);
+      font-family: 'Inter', Arial, Helvetica, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-body   { font-family: 'Inter', sans-serif; }
+
+    #water-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #0d0d0d;
+      border-right: 1px solid #1f1f1f;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .new-chat-btn {
+      margin: 14px 14px 8px;
+      background: var(--color-yellow);
+      color: var(--color-black);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      transition: opacity 0.15s;
+    }
+    .new-chat-btn:hover { opacity: 0.88; }
+    .sidebar-section {
+      padding: 16px 10px 4px;
+    }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-muted);
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #aaaaaa;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      text-decoration: none;
+      position: relative;
+    }
+    .sidebar-item:hover { background: #252525; color: #ffffff; }
+    .sidebar-item.active { background: #252525; color: #ffffff; }
+    .sidebar-item .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+    .sidebar-item .badge {
+      margin-left: auto;
+      font-size: 10px;
+      background: #2a2a2a;
+      color: var(--color-muted);
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px 14px;
+      border-top: 1px solid #2a2a2a;
+    }
+    .upgrade-card {
+      background: #f5c80018;
+      border: 1px solid #f5c80030;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .upgrade-card p { font-size: 12px; color: #aaaaaa; margin: 2px 0 8px; }
+    .upgrade-btn {
+      background: var(--color-yellow);
+      color: var(--color-black);
+      border: none;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Main area */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #2a2a2a;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .tab-group {
+      display: flex;
+      gap: 4px;
+      background: #1a1a1a;
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      font-family: 'Inter', sans-serif;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .tab-btn.active { background: var(--color-yellow); color: var(--color-black); }
+    .tab-btn:not(.active) { background: transparent; color: #888888; }
+    .tab-btn:not(.active):hover { background: #252525; color: #cccccc; }
+
+    /* Repo selector */
+    .repo-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      border-bottom: 1px solid #2a2a2a;
+      flex-shrink: 0;
+    }
+    .repo-label { font-size: 12px; color: var(--color-muted); }
+    #repo-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ffffff;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s;
+    }
+    #repo-toggle:hover { border-color: var(--color-yellow); }
+    #repo-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 280px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 50;
+    }
+    #repo-dropdown button {
+      width: 100%;
+      text-align: left;
+      padding: 9px 14px;
+      font-size: 13px;
+      background: transparent;
+      border: none;
+      color: #cccccc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.1s;
+    }
+    #repo-dropdown button:hover { background: #2a2a2a; }
+    #repo-dropdown button.selected { color: var(--color-yellow); background: #f5c80010; }
+    #repo-dropdown .add-repo { color: var(--color-yellow); border-top: 1px solid #2a2a2a; }
+
+    /* Messages / hero area */
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px 20px;
+      gap: 24px;
+    }
+    .orbs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .orb {
+      border-radius: 50%;
+      opacity: 0.85;
+    }
+    .hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.3;
+      max-width: 420px;
+    }
+    .hero-title span { color: var(--color-yellow); }
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 560px;
+    }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #cccccc;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--color-yellow); color: #ffffff; background: #f5c80012; }
+    .chip-icon {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Chat messages */
+    .msg-assistant, .msg-user { padding: 0 24px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+    .bubble-assistant {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #e0e0e0;
+      max-width: 75%;
+    }
+    .bubble-user {
+      background: var(--color-yellow);
+      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: var(--color-black);
+      font-weight: 500;
+      max-width: 75%;
+      margin-left: auto;
+    }
+    .bubble-label { font-size: 11px; color: var(--color-muted); margin-bottom: 4px; }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px 20px;
+      flex-shrink: 0;
+    }
+    .input-box {
+      background: #131313;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      overflow: visible;
+      transition: border-color 0.15s;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .input-box:focus-within { border-color: var(--color-yellow); }
+    .input-box textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 14px 16px 8px;
+      min-height: 52px;
+      max-height: 160px;
+      box-sizing: border-box;
+      line-height: 1.5;
+    }
+    .input-box textarea::placeholder { color: #555555; }
+    .input-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px 10px;
+    }
+    .input-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #252525;
+      border: 1px solid #333;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #888888;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.12s, color 0.12s;
+    }
+    .input-chip:hover { border-color: #555; color: #cccccc; }
+    .send-btn {
+      margin-left: auto;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--color-yellow);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn svg { width: 16px; height: 16px; fill: var(--color-black); }
+  </style>
+</head>
+<body class="h-screen overflow-hidden flex">
+  <canvas id="water-canvas" aria-hidden="true"></canvas>
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar relative z-10" data-shape-mask>
+    <div class="sidebar-logo">
+      <a href="/" class="font-display text-xl font-bold tracking-tight" style="text-decoration:none;">
+        <span style="color:#ffffff;">Forge</span><span style="color:var(--color-yellow);">.</span>
+      </a>
+    </div>
+
+    <button class="new-chat-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Chat
+    </button>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Repos</div>
+      <a href="#" class="sidebar-item active">
+        <span class="dot"></span>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">advent-of-code-2025</span>
+        <span class="badge">indexed</span>
+      </a>
+      <a href="#" class="sidebar-item">
+        <span class="dot"></span>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">karlhadwen/todoist</span>
+        <span class="badge">indexed</span>
+      </a>
+      <a href="#" class="sidebar-item" style="color:var(--color-yellow); gap:8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add repo...
+      </a>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:8px;">
+      <div class="sidebar-section-label">Navigation</div>
+      <a href="/ask" class="sidebar-item active">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Ask
+      </a>
+      <a href="/wiki" class="sidebar-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Wiki
+      </a>
+      <a href="/usage" class="sidebar-item">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Usage
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="upgrade-card">
+        <div style="font-size:13px; font-weight:600; color:#ffffff;">Forge Pro Access</div>
+        <p>Unlimited queries and private repo support.</p>
+        <button class="upgrade-btn">Upgrade Now</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN ==================== -->
+  <main class="main-area relative z-10">
+
+    <!-- Top bar -->
+    <div class="topbar" data-shape-mask>
+      <span class="topbar-title">Ask Mode</span>
+      <div class="tab-group">
+        <a href="/ask" class="tab-btn active">&#x1F4AC; Ask</a>
+        <a href="/wiki" class="tab-btn">&#x1F4DA; Wiki</a>
+      </div>
+    </div>
+
+    <!-- Repo bar -->
+    <div class="repo-bar" style="position:relative;" data-shape-mask>
+      <span class="repo-label">Knowledge Repo:</span>
+      <div id="repo-selector" style="position:relative;">
+        <button id="repo-toggle">
+          <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0;"></span>
+          TyshaLong/advent-of-code-2025
+          <svg style="width:14px;height:14px;opacity:0.5;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="repo-dropdown" class="hidden">
+          <button>All repos</button>
+          <button class="selected">
+            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;display:inline-block;"></span>
+            TyshaLong/advent-of-code-2025
+            <span style="margin-left:auto;font-size:11px;color:var(--color-muted);">indexed</span>
+          </button>
+          <button>
+            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;display:inline-block;"></span>
+            karlhadwen/todoist
+            <span style="margin-left:auto;font-size:11px;color:var(--color-muted);">indexed</span>
+          </button>
+          <button class="add-repo">+ Add repo...</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages / Hero -->
+    <div class="messages-area" id="messages">
+      <!-- Hero (shown when no messages) -->
+      <div class="hero" id="hero">
+        <div class="orbs">
+          <div class="orb" style="width:42px;height:42px;background:#f5c800;"></div>
+          <div class="orb" style="width:50px;height:50px;background:#9b59b6;"></div>
+          <div class="orb" style="width:42px;height:42px;background:#f5c800;opacity:0.6;"></div>
+          <div class="orb" style="width:34px;height:34px;background:#888888;opacity:0.5;"></div>
+        </div>
+        <div class="hero-title">
+          Ask anything about your code.<br>
+          <span>Get answers in seconds.</span>
+        </div>
+        <div class="quick-chips">
+          <button class="chip" onclick="fillPrompt('Explain the auth flow')">
+            <span class="chip-icon" style="background:#f5c80020;">&#x1F511;</span>
+            Explain auth flow
+          </button>
+          <button class="chip" onclick="fillPrompt('Where is the main entry point?')">
+            <span class="chip-icon" style="background:#9b59b620;">&#x1F50D;</span>
+            Find entry point
+          </button>
+          <button class="chip" onclick="fillPrompt('List all API endpoints')">
+            <span class="chip-icon" style="background:#22c55e20;">&#x1F517;</span>
+            List API endpoints
+          </button>
+          <button class="chip" onclick="fillPrompt('How are tests structured?')">
+            <span class="chip-icon" style="background:#3b82f620;">&#x2705;</span>
+            Test structure
+          </button>
+          <button class="chip" onclick="fillPrompt('Summarize recent changes')">
+            <span class="chip-icon" style="background:#f5c80020;">&#x1F4CB;</span>
+            Recent changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <div class="input-box" data-shape-mask>
+        <textarea
+          id="chat-input"
+          placeholder="Ask a question about your code..."
+          rows="1"
+          oninput="autoResize(this)"
+          onkeydown="handleKey(event)"
+        ></textarea>
+        <div class="input-footer">
+          <button class="input-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Attach
+          </button>
+          <button class="input-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Browse Prompts
+          </button>
+          <button class="input-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Filter by File
+          </button>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script>
+    // Repo dropdown
+    const toggle = document.getElementById('repo-toggle');
+    const dropdown = document.getElementById('repo-dropdown');
+    toggle.addEventListener('click', () => dropdown.classList.toggle('hidden'));
+    document.addEventListener('mousedown', (e) => {
+      if (!document.getElementById('repo-selector').contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // Auto-resize textarea
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    }
+
+    function fillPrompt(text) {
+      const input = document.getElementById('chat-input');
+      input.value = text;
+      autoResize(input);
+      input.focus();
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      const hero = document.getElementById('hero');
+      if (hero) hero.remove();
+
+      const container = document.getElementById('messages');
+
+      const userRow = document.createElement('div');
+      userRow.className = 'msg-user';
+      userRow.style.cssText = 'padding:12px 24px;max-width:800px;margin:0 auto;width:100%;box-sizing:border-box;display:flex;justify-content:flex-end;';
+      userRow.innerHTML = `<div class="bubble-user">${escHtml(text)}</div>`;
+      container.appendChild(userRow);
+
+      const assistantRow = document.createElement('div');
+      assistantRow.className = 'msg-assistant';
+      assistantRow.style.cssText = 'padding:12px 24px;max-width:800px;margin:0 auto;width:100%;box-sizing:border-box;';
+      assistantRow.innerHTML = `<div class="bubble-label">Claude Sonnet</div><div class="bubble-assistant">Searching <strong>${escHtml(document.querySelector('#repo-toggle').textContent.trim().split('\n').pop().trim())}</strong>…</div>`;
+      container.appendChild(assistantRow);
+
+      input.value = '';
+      input.style.height = 'auto';
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+  </script>
+
+  <!-- ==================== ANIMATED SHAPE-GRID BACKGROUND ==================== -->
+  <script>
+  (function () {
+    var gap = 40;
+    var radiusVmin = 30;
+    var speedIn = 0.5;
+    var speedOut = 0.6;
+    var restScale = 0.09;
+    var minHoverScale = 0.7;
+    var maxHoverScale = 2;
+    var waveSpeed = 1200;
+    var waveWidth = 180;
+
+    var PALETTE = [
+      { type: 'solid', value: '#22c55e' },
+      { type: 'solid', value: '#06b6d4' },
+      { type: 'solid', value: '#f97316' },
+      { type: 'solid', value: '#ef4444' },
+      { type: 'solid', value: '#facc15' },
+      { type: 'solid', value: '#ec4899' },
+      { type: 'solid', value: '#9ca3af' },
+      { type: 'solid', value: '#a78bfa' },
+      { type: 'solid', value: '#60a5fa' },
+      { type: 'solid', value: '#34d399' },
+      { type: 'gradient', stops: ['#6366f1', '#3b82f6'] },
+      { type: 'gradient', stops: ['#06b6d4', '#6366f1'] },
+      { type: 'gradient', stops: ['#22c55e', '#06b6d4'] },
+      { type: 'gradient', stops: ['#f97316', '#ef4444'] },
+      { type: 'gradient', stops: ['#8b5cf6', '#06b6d4'] },
+      { type: 'gradient', stops: ['#3b82f6', '#8b5cf6'] },
+      { type: 'gradient', stops: ['#34d399', '#3b82f6'] },
+    ];
+
+    var SHAPE_TYPES = ['circle', 'pill', 'star', 'star'];
+
+    var canvas = document.getElementById('water-canvas');
+    var ctx = canvas.getContext('2d');
+
+    var grid = null;
+    var rafId = null;
+    var pointer = null;
+    var activity = 0;
+    var waves = [];
+    var maskRects = [];
+    var frameCount = 0;
+    var maskOverride = false;
+
+    function rnd(min, max) { return Math.random() * (max - min) + min; }
+    function rndInt(min, max) { return Math.floor(rnd(min, max + 1)); }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function smoothstep(t) {
+      var c = Math.max(0, Math.min(1, t));
+      return c * c * (3 - 2 * c);
+    }
+
+    function durationToFactor(seconds) {
+      if (seconds <= 0) return 1;
+      return 1 - Math.pow(0.05, 1 / (60 * seconds));
+    }
+
+    function drawCircle(ctx, size) {
+      ctx.beginPath();
+      ctx.arc(0, 0, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPill(ctx, size) {
+      var w = size * 0.48;
+      var h = size;
+      ctx.beginPath();
+      ctx.roundRect(-w, -h, w * 2, h * 2, w);
+      ctx.fill();
+    }
+
+    function drawStar(ctx, size, points, innerRatio) {
+      ctx.beginPath();
+      for (var i = 0; i < points * 2; i++) {
+        var angle = (i * Math.PI) / points - Math.PI / 2;
+        var r = i % 2 === 0 ? size : size * innerRatio;
+        var x = Math.cos(angle) * r;
+        var y = Math.sin(angle) * r;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawShape(ctx, shape) {
+      switch (shape.type) {
+        case 'circle': return drawCircle(ctx, shape.size / 1.5);
+        case 'pill':   return drawPill(ctx, shape.size / 1.4);
+        case 'star':   return drawStar(ctx, shape.size, shape.points, shape.innerRatio);
+      }
+    }
+
+    function resolveFill(ctx, colorDef, size) {
+      if (colorDef.type === 'solid') return colorDef.value;
+      var grad = ctx.createRadialGradient(0, -size * 0.3, 0, 0, size * 0.3, size * 1.5);
+      grad.addColorStop(0, colorDef.stops[0]);
+      grad.addColorStop(1, colorDef.stops[1]);
+      return grad;
+    }
+
+    function randomStarProps() {
+      return {
+        points: rndInt(4, 10),
+        innerRatio: rnd(0.1, 0.5),
+      };
+    }
+
+    function buildGrid() {
+      var W = window.innerWidth;
+      var H = window.innerHeight;
+      var cols = Math.floor(W / gap);
+      var rows = Math.floor(H / gap);
+      var offsetX = (W - (cols - 1) * gap) / 2;
+      var offsetY = (H - (rows - 1) * gap) / 2;
+      var shapes = [];
+
+      for (var row = 0; row < rows; row++) {
+        for (var col = 0; col < cols; col++) {
+          var type = pick(SHAPE_TYPES);
+          var shape = {
+            x: offsetX + col * gap,
+            y: offsetY + row * gap,
+            type: type,
+            color: pick(PALETTE),
+            angle: rnd(0, Math.PI * 2),
+            size: gap * 0.38,
+            scale: restScale,
+            maxScale: rnd(minHoverScale, maxHoverScale),
+            hovered: false,
+          };
+          if (type === 'star') Object.assign(shape, randomStarProps());
+          shapes.push(shape);
+        }
+      }
+
+      return { shapes: shapes, width: W, height: H };
+    }
+
+    function init() {
+      var W = window.innerWidth;
+      var H = window.innerHeight;
+      var dpr = window.devicePixelRatio || 1;
+
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+
+      grid = buildGrid();
+    }
+
+    function tick() {
+      if (!grid) { rafId = requestAnimationFrame(tick); return; }
+
+      var shapes = grid.shapes;
+      var width = grid.width;
+      var height = grid.height;
+      var radius = Math.min(width, height) * (radiusVmin / 100);
+      var now = performance.now();
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#080808';
+      ctx.fillRect(0, 0, width, height);
+
+      activity *= 0.93;
+
+      frameCount++;
+      if (frameCount % 10 === 0) {
+        maskRects = Array.from(document.querySelectorAll('[data-shape-mask]'))
+          .map(function(el) { return el.getBoundingClientRect(); });
+      }
+
+      var maxDist = Math.sqrt(width * width + height * height);
+      waves = waves.filter(function(w) {
+        return (now - w.startTime) / 1000 * waveSpeed < maxDist + waveWidth;
+      });
+
+      for (var i = 0; i < shapes.length; i++) {
+        var shape = shapes[i];
+        var pad = gap / 2;
+        var masked = !maskOverride && maskRects.some(function(r) {
+          return shape.x >= r.left - pad && shape.x <= r.right  + pad &&
+                 shape.y >= r.top  - pad && shape.y <= r.bottom + pad;
+        });
+
+        if (masked) {
+          shape.scale += (0 - shape.scale) * durationToFactor(speedOut);
+          if (shape.scale < 0.005) shape.scale = 0;
+          continue;
+        }
+
+        var pointerInfluence = 0;
+        if (pointer && activity > 0.001) {
+          var dx = shape.x - pointer.x;
+          var dy = shape.y - pointer.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          pointerInfluence = smoothstep(1 - dist / radius) * activity;
+
+          if (pointerInfluence > 0.05 && !shape.hovered) {
+            shape.hovered = true;
+            shape.maxScale = rnd(minHoverScale, maxHoverScale);
+            shape.angle = rnd(0, Math.PI * 2);
+            if (shape.type === 'star') Object.assign(shape, randomStarProps());
+          } else if (pointerInfluence <= 0.05) {
+            shape.hovered = false;
+          }
+        } else {
+          shape.hovered = false;
+        }
+
+        var waveInfluence = 0;
+        for (var j = 0; j < waves.length; j++) {
+          var wave = waves[j];
+          var waveRadius = (now - wave.startTime) / 1000 * waveSpeed;
+          var wdx = shape.x - wave.x;
+          var wdy = shape.y - wave.y;
+          var wdist = Math.sqrt(wdx * wdx + wdy * wdy);
+          var t = 1 - Math.abs(wdist - waveRadius) / waveWidth;
+          if (t > 0) waveInfluence = Math.max(waveInfluence, Math.sin(Math.PI * t));
+        }
+
+        var pointerTarget = restScale + pointerInfluence * (shape.maxScale - restScale);
+        var waveTarget = restScale + waveInfluence * (shape.maxScale - restScale);
+        var target = Math.max(pointerTarget, waveTarget);
+
+        var factor = target > shape.scale ? durationToFactor(speedIn) : durationToFactor(speedOut);
+        shape.scale += (target - shape.scale) * factor;
+
+        if (shape.scale < restScale * 0.15) continue;
+
+        ctx.save();
+        ctx.translate(shape.x, shape.y);
+        ctx.rotate(shape.angle);
+        ctx.scale(shape.scale, shape.scale);
+        ctx.fillStyle = resolveFill(ctx, shape.color, shape.size);
+        drawShape(ctx, shape);
+        ctx.restore();
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function onMove(e) {
+      pointer = { x: e.clientX, y: e.clientY };
+      activity = 1;
+    }
+
+    function onClick(e) {
+      triggerWave(e.clientX, e.clientY);
+    }
+
+    function triggerWave(x, y) {
+      x = x !== undefined ? x : window.innerWidth / 2;
+      y = y !== undefined ? y : window.innerHeight / 2;
+      waves.push({ x: x, y: y, startTime: performance.now() });
+      maskOverride = true;
+      var delay = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / waveSpeed;
+      setTimeout(function() { maskOverride = false; }, delay * 1000);
+    }
+
+    init();
+    rafId = requestAnimationFrame(tick);
+
+    window.addEventListener('resize', init);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('click', onClick);
+
+    triggerWave();
+  })();
+  </script>
+</body>
+</html>
