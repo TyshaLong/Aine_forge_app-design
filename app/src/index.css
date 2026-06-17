@@ -287,6 +287,28 @@ body {
 }
 .bubble-label { font-size: 11px; color: var(--color-muted); margin-bottom: 4px; }
 
+/* Assistant loading + sources */
+.thinking-dots span { animation: blink 1.2s infinite both; }
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+.files-read { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a2a; }
+.files-read-label { font-size: 11px; color: var(--color-muted); }
+.files-read-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.file-chip {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  color: #cccccc;
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 2px 8px;
+  text-decoration: none;
+  transition: border-color 0.12s, color 0.12s;
+}
+.file-chip:hover { border-color: var(--color-yellow); color: #ffffff; }
+
 /* Input area */
 .input-area { padding: 16px 24px 20px; flex-shrink: 0; }
 .input-box {

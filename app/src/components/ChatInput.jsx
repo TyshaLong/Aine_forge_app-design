@@ -16,7 +16,7 @@ const FilterIcon = () => (
   </svg>
 );
 
-export default function ChatInput({ value, onChange, onSend, inputRef }) {
+export default function ChatInput({ value, onChange, onSend, inputRef, disabled }) {
   const localRef = useRef(null);
   const ref = inputRef || localRef;
 
@@ -30,7 +30,7 @@ export default function ChatInput({ value, onChange, onSend, inputRef }) {
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (!disabled) onSend();
     }
   }
 
@@ -44,12 +44,19 @@ export default function ChatInput({ value, onChange, onSend, inputRef }) {
           onKeyDown={handleKey}
           placeholder="Ask a question about your code..."
           rows={1}
+          disabled={disabled}
         />
         <div className="input-footer">
           <button className="input-chip"><AttachIcon /> Attach</button>
           <button className="input-chip"><PromptsIcon /> Browse Prompts</button>
           <button className="input-chip"><FilterIcon /> Filter by File</button>
-          <button className="send-btn" onClick={onSend} aria-label="Send">
+          <button
+            className="send-btn"
+            onClick={onSend}
+            aria-label="Send"
+            disabled={disabled}
+            style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          >
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
             </svg>
