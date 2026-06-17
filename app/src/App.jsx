@@ -31,7 +31,7 @@ export default function App() {
     setMessages((prev) => [
       ...prev,
       { role: 'user', text },
-      { role: 'assistant', model: 'Claude Opus', loading: true, repo: targetRepo },
+      { role: 'assistant', model: 'Llama 3.3 70B', loading: true, repo: targetRepo },
     ]);
     setInput('');
     setBusy(true);

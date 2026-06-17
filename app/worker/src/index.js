@@ -1,21 +1,19 @@
-// Forge Ask — Cloudflare Worker proxy.
-// Holds ANTHROPIC_API_KEY (+ optional GITHUB_TOKEN) server-side and runs an
-// agentic loop: read repo files from the GitHub API → answer with Claude.
+// Forge Ask — Cloudflare Worker proxy (Cloudflare Workers AI, free tier).
+// A question comes in -> the worker picks the most relevant repo files from the
+// GitHub API, then answers with a free Llama model running on Cloudflare's edge.
+// No Anthropic key, no per-question bill (within Cloudflare's free allowance).
 //
 // Endpoints:
-//   POST /ask   { repo: "owner/name", question: "..." } -> { answer, files }
+//   POST /ask   { repo: "owner/name", question: "..." } -> { answer, files, model }
 //   GET  /health
 //
-// Secrets (set via `wrangler secret put`):
-//   ANTHROPIC_API_KEY  (required)
-//   GITHUB_TOKEN       (optional — raises GitHub rate limits / enables private repos)
+// Optional secret (raises GitHub rate limits / enables private repos):
+//   npx wrangler secret put GITHUB_TOKEN
 
-import Anthropic from '@anthropic-ai/sdk';
-
-const MODEL = 'claude-opus-4-8';
-const MAX_ITERATIONS = 8;        // safety cap on the agent loop
-const MAX_TREE_PATHS = 600;      // cap the file list we put in the prompt
-const MAX_FILE_BYTES = 50_000;   // truncate large files when read
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+const MAX_FILES = 5;             // files fed to the model per question
+const MAX_FILE_BYTES = 8_000;    // per-file cap (keeps the prompt within context)
+const MAX_TREE_PATHS = 1_500;    // cap on how many paths we rank
 
 export default {
   async fetch(request, env) {
@@ -26,10 +24,7 @@ export default {
     if (url.pathname === '/health') return json({ ok: true }, 200, cors);
     if (url.pathname !== '/ask') return json({ error: 'not found' }, 404, cors);
     if (request.method !== 'POST') return json({ error: 'POST only' }, 405, cors);
-
-    if (!env.ANTHROPIC_API_KEY) {
-      return json({ error: 'Server missing ANTHROPIC_API_KEY' }, 500, cors);
-    }
+    if (!env.AI) return json({ error: 'Workers AI binding (AI) not configured' }, 500, cors);
 
     let body;
     try { body = await request.json(); } catch { return json({ error: 'invalid JSON body' }, 400, cors); }
@@ -58,8 +53,7 @@ function ghHeaders(env, accept = 'application/vnd.github+json') {
 async function getDefaultBranch(env, repo) {
   const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: ghHeaders(env) });
   if (!r.ok) throw new Error(`GitHub: cannot read repo ${repo} (${r.status})`);
-  const data = await r.json();
-  return data.default_branch || 'main';
+  return (await r.json()).default_branch || 'main';
 }
 
 async function listFiles(env, repo, branch) {
@@ -69,8 +63,7 @@ async function listFiles(env, repo, branch) {
   );
   if (!r.ok) throw new Error(`GitHub: cannot read tree for ${repo}@${branch} (${r.status})`);
   const data = await r.json();
-  const paths = (data.tree || []).filter((n) => n.type === 'blob').map((n) => n.path);
-  return { paths, truncated: !!data.truncated };
+  return (data.tree || []).filter((n) => n.type === 'blob').map((n) => n.path);
 }
 
 async function readFile(env, repo, branch, path) {
@@ -78,89 +71,84 @@ async function readFile(env, repo, branch, path) {
     `https://api.github.com/repos/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`,
     { headers: ghHeaders(env, 'application/vnd.github.raw') }
   );
-  if (r.status === 404) return { error: `File not found: ${path}` };
-  if (!r.ok) return { error: `GitHub: cannot read ${path} (${r.status})` };
+  if (!r.ok) return null;
   let text = await r.text();
-  let truncated = false;
-  if (text.length > MAX_FILE_BYTES) { text = text.slice(0, MAX_FILE_BYTES); truncated = true; }
-  return { text, truncated };
+  if (text.length > MAX_FILE_BYTES) text = text.slice(0, MAX_FILE_BYTES) + '\n…[truncated]';
+  return text;
 }
 
-/* ── Agent loop ─────────────────────────────────────────────── */
+/* ── Relevance ranking (no LLM) ─────────────────────────────── */
+
+const STOP = new Set(['the','and','for','that','this','with','does','what','how','why','where','when','are','was','use','using','code','file','files','work','works','about','into','from','your']);
+const SRC_RE = /\.(js|ts|jsx|tsx|py|go|rb|java|rs|c|cc|cpp|h|hpp|cs|php|swift|kt|md|json|toml|yaml|yml|html|css|sh)$/i;
+
+function selectFiles(paths, question) {
+  const terms = [...new Set((question.toLowerCase().match(/[a-z0-9_]+/g) || [])
+    .filter((t) => t.length > 2 && !STOP.has(t)))];
+
+  const scored = paths.map((p) => {
+    const lp = p.toLowerCase();
+    const name = lp.split('/').pop();
+    let s = 0;
+    for (const t of terms) if (lp.includes(t)) s += name.includes(t) ? 2 : 1;
+    if (SRC_RE.test(lp)) s += 0.1;
+    return { p, s };
+  });
+  scored.sort((a, b) => b.s - a.s || a.p.length - b.p.length);
+
+  let picked = scored.filter((x) => x.s > 0).slice(0, MAX_FILES).map((x) => x.p);
+
+  // Always give the model the README for orientation.
+  const readme = paths.find((p) => /(^|\/)readme\.md$/i.test(p));
+  if (readme && !picked.includes(readme)) picked.unshift(readme);
+
+  // Nothing matched? fall back to obvious entry points, else the first few files.
+  if (picked.length === 0) {
+    const entry = paths.filter((p) => /(readme|index|main|app)\.[a-z]+$/i.test(p));
+    picked = (entry.length ? entry : paths).slice(0, MAX_FILES);
+  }
+  return picked.slice(0, MAX_FILES);
+}
+
+/* ── Answer ─────────────────────────────────────────────────── */
 
 async function answerQuestion(env, repo, question) {
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   const branch = await getDefaultBranch(env, repo);
-  const { paths, truncated } = await listFiles(env, repo, branch);
+  const paths = (await listFiles(env, repo, branch)).slice(0, MAX_TREE_PATHS);
+  const picked = selectFiles(paths, question);
 
-  const shown = paths.slice(0, MAX_TREE_PATHS);
-  const treeNote = (paths.length > shown.length || truncated)
-    ? `\n(showing ${shown.length} of ${paths.length}${truncated ? '+' : ''} files)`
-    : '';
-
-  const system =
-    `You are Forge, a coding assistant answering questions about the GitHub repository "${repo}" (branch ${branch}).\n\n` +
-    `You can read files with the read_file tool. Read the files you need before answering — do not guess at code you have not read. ` +
-    `Cite the file paths you used. If the answer isn't in the repo, say so.\n\n` +
-    `Repository files:\n${shown.join('\n')}${treeNote}`;
-
-  const tools = [{
-    name: 'read_file',
-    description: 'Read the full text of a file in the repository by its path (as listed in the repository files).',
-    input_schema: {
-      type: 'object',
-      properties: { path: { type: 'string', description: 'Repository-relative file path, e.g. src/index.js' } },
-      required: ['path'],
-    },
-  }];
-
-  const messages = [{ role: 'user', content: question }];
-  const filesRead = [];
-
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const resp = await client.messages.create({
-      model: MODEL,
-      max_tokens: 4096,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'medium' },
-      system,
-      tools,
-      messages,
-    });
-
-    if (resp.stop_reason !== 'tool_use') {
-      const answer = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-      return { answer: answer || '(no answer produced)', files: filesRead };
-    }
-
-    // Echo the assistant turn (incl. thinking + tool_use blocks) back verbatim.
-    messages.push({ role: 'assistant', content: resp.content });
-
-    const toolResults = [];
-    for (const block of resp.content) {
-      if (block.type !== 'tool_use' || block.name !== 'read_file') continue;
-      const path = String((block.input && block.input.path) || '');
-      const file = await readFile(env, repo, branch, path);
-      if (file.error) {
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, is_error: true, content: file.error });
-      } else {
-        if (!filesRead.includes(path)) filesRead.push(path);
-        const suffix = file.truncated ? '\n\n[truncated]' : '';
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: `${path}:\n\n${file.text}${suffix}` });
-      }
-    }
-    messages.push({ role: 'user', content: toolResults });
+  const blocks = [];
+  const used = [];
+  for (const path of picked) {
+    const text = await readFile(env, repo, branch, path);
+    if (text == null) continue;
+    used.push(path);
+    blocks.push(`--- ${path} ---\n${text}`);
   }
 
-  return { answer: 'I read several files but ran out of steps before finishing. Try a more specific question.', files: filesRead };
+  const system =
+    `You are Forge, a coding assistant answering questions about the GitHub repository "${repo}" (branch ${branch}). ` +
+    `Answer using only the file contents provided below. Reference the file paths you used. ` +
+    `If the answer is not in these files, say so plainly and suggest where in the repo to look next.\n\n` +
+    `FILES:\n${blocks.join('\n\n') || '(no readable files found)'}`;
+
+  const result = await env.AI.run(MODEL, {
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: question },
+    ],
+    max_tokens: 2048,
+  });
+
+  const answer = (result && (result.response || '')).trim();
+  return { answer: answer || '(no answer produced)', files: used, model: 'Llama 3.3 70B' };
 }
 
 /* ── HTTP helpers ───────────────────────────────────────────── */
 
 function corsHeaders(request) {
-  const origin = request.headers.get('Origin') || '*';
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': request.headers.get('Origin') || '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',

@@ -1,8 +1,10 @@
 name = "forge-ask-api"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
-compatibility_flags = ["nodejs_compat"]
 
-# Secrets are NOT set here — use:
-#   npx wrangler secret put ANTHROPIC_API_KEY
-#   npx wrangler secret put GITHUB_TOKEN   (optional)
+# Cloudflare Workers AI — free-tier LLM, no API key needed.
+[ai]
+binding = "AI"
+
+# Optional secret (higher GitHub rate limits / private repos):
+#   npx wrangler secret put GITHUB_TOKEN

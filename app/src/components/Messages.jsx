@@ -10,7 +10,7 @@ export default function Messages({ messages }) {
           </div>
         ) : (
           <div key={i} className="msg-row">
-            <div className="bubble-label">{m.model || 'Claude Opus'}</div>
+            <div className="bubble-label">{m.model || 'Llama 3.3 70B'}</div>
             <div className="bubble-assistant" style={m.error ? { borderColor: '#7a2a2a', color: '#f0b4b4' } : undefined}>
               {m.loading ? (
                 <span className="thinking-dots">Searching {m.repo}<span>.</span><span>.</span><span>.</span></span>
