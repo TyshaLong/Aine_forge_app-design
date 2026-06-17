@@ -23,3 +23,13 @@ no dependencies to install — open it directly in a browser.
   near-black `#080808`.
 - The chat send is a **static mock** that renders a placeholder bubble — wire it to
   a real backend at the marked integration point; do not invent an API.
+
+## React app
+
+A runnable React + Vite + Tailwind implementation lives in [`app/`](app/).
+
+```bash
+cd app
+npm install
+npm run dev   # http://localhost:5174
+```
