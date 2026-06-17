@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { REPOS, repoUrl } from '../lib/repos.js';
 
-const REPOS = [
-  { name: 'TyshaLong/advent-of-code-2025' },
-  { name: 'karlhadwen/todoist' },
-];
+const ExternalIcon = (props) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
 
 export default function RepoBar({ repo, onSelect }) {
   const [open, setOpen] = useState(false);
@@ -34,19 +36,42 @@ export default function RepoBar({ repo, onSelect }) {
             <button onClick={() => { onSelect('All repos'); setOpen(false); }}>All repos</button>
             {REPOS.map((r) => (
               <button
-                key={r.name}
-                className={repo === r.name ? 'selected' : ''}
-                onClick={() => { onSelect(r.name); setOpen(false); }}
+                key={r.full}
+                className={repo === r.full ? 'selected' : ''}
+                onClick={() => { onSelect(r.full); setOpen(false); }}
               >
                 <span className="dropdown-dot" />
-                {r.name}
-                <span className="dropdown-meta">indexed</span>
+                {r.full}
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="dropdown-meta"
+                  title={`Open ${r.full} on GitHub`}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  indexed <ExternalIcon style={{ opacity: 0.7 }} />
+                </a>
               </button>
             ))}
             <button className="add-repo">+ Add repo...</button>
           </div>
         )}
       </div>
+
+      {repo !== 'All repos' && (
+        <a
+          href={repoUrl(repo)}
+          target="_blank"
+          rel="noreferrer"
+          className="repo-label"
+          title={`Open ${repo} on GitHub`}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+        >
+          <ExternalIcon style={{ opacity: 0.6 }} /> GitHub
+        </a>
+      )}
     </div>
   );
 }

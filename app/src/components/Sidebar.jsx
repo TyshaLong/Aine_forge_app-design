@@ -1,13 +1,16 @@
+import { REPOS } from '../lib/repos.js';
+
 const PlusIcon = (props) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
 
-const REPOS = [
-  { name: 'advent-of-code-2025', active: true },
-  { name: 'karlhadwen/todoist', active: false },
-];
+const ExternalIcon = (props) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
 
 const NAV = [
   {
@@ -41,11 +44,19 @@ export default function Sidebar() {
 
       <div className="sidebar-section">
         <div className="sidebar-section-label">Repos</div>
-        {REPOS.map((repo) => (
-          <a key={repo.name} href="#" className={`sidebar-item${repo.active ? ' active' : ''}`}>
+        {REPOS.map((repo, i) => (
+          <a
+            key={repo.full}
+            href={repo.url}
+            target="_blank"
+            rel="noreferrer"
+            title={`Open ${repo.full} on GitHub`}
+            className={`sidebar-item${i === 0 ? ' active' : ''}`}
+          >
             <span className="dot" />
-            <span className="label">{repo.name}</span>
-            <span className="badge">indexed</span>
+            <span className="label">{repo.short}</span>
+            {repo.indexed && <span className="badge">indexed</span>}
+            <ExternalIcon style={{ opacity: 0.4, flexShrink: 0 }} />
           </a>
         ))}
         <a href="#" className="sidebar-item" style={{ color: 'var(--color-yellow)', gap: 8 }}>
