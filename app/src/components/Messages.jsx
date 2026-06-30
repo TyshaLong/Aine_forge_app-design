@@ -15,7 +15,15 @@ export default function Messages({ messages }) {
               {m.loading ? (
                 <span className="thinking-dots">Searching {m.repo}<span>.</span><span>.</span><span>.</span></span>
               ) : (
-                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{m.text}</p>
+                <>
+                  {m.error && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #7a2a2a' }}>
+                      <span style={{ fontSize: '14px', lineHeight: 1 }}>⚠️</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#f0b4b4', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Error</span>
+                    </div>
+                  )}
+                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{m.text}</p>
+                </>
               )}
               {!m.loading && !m.error && m.files && m.files.length > 0 && (
                 <div className="files-read">
