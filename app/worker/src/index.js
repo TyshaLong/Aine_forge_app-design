@@ -4,6 +4,7 @@
 // No Anthropic key, no per-question bill (within Cloudflare's free allowance).
 //
 // Endpoints:
+//   GET  /hello                                          -> { message: "Hello, World!" }
 //   POST /ask   { repo: "owner/name", question: "..." } -> { answer, files, model }
 //   GET  /health
 //
@@ -22,6 +23,7 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname === '/health') return json({ ok: true }, 200, cors);
+    if (url.pathname === '/hello')  return json({ message: 'Hello, World!' }, 200, cors);
     if (url.pathname !== '/ask') return json({ error: 'not found' }, 404, cors);
     if (request.method !== 'POST') return json({ error: 'POST only' }, 405, cors);
     if (!env.AI) return json({ error: 'Workers AI binding (AI) not configured' }, 500, cors);
