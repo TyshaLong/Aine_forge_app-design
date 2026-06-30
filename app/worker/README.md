@@ -39,7 +39,7 @@ npm install
 npx wrangler dev   # serves on http://localhost:8787; Workers AI runs on Cloudflare
 ```
 
-The Vite dev server proxies `/ask` and `/health` to `http://localhost:8787`.
+The Vite dev server proxies `/ask`, `/health`, and `/hello` to `http://localhost:8787`.
 
 ## Model / cost
 
@@ -51,6 +51,7 @@ The Vite dev server proxies `/ask` and `/health` to `http://localhost:8787`.
 
 ## Endpoints
 
+- `GET  /hello` — `{ "message": "Hello, World!" }`
 - `POST /ask` — body `{ "repo": "owner/name", "question": "..." }` →
   `{ "answer": "...", "files": ["path/a"], "model": "Llama 3.3 70B" }`
-- `GET /health` — `{ "ok": true }`
+- `GET  /health` — `{ "ok": true }`
