@@ -12,8 +12,9 @@ export default defineConfig(({ command }) => ({
     // In dev, forward API calls to `wrangler dev` (the Worker) on :8787,
     // so the app works without setting VITE_API_BASE.
     proxy: {
-      '/ask': 'http://localhost:8787',
-      '/health': 'http://localhost:8787',
+      '/ask':      'http://localhost:8787',
+      '/health':   'http://localhost:8787',
+      '/profiles': 'http://localhost:8787',
     },
   },
 }));
