@@ -10,6 +10,7 @@
   --color-purple: #9b59b6;
   --color-border: #000000;
   --color-muted: #888888;
+  --color-icon: #3b82f6;
 }
 
 html, body { height: 100%; }
@@ -70,6 +71,9 @@ body {
   transition: opacity 0.15s;
 }
 .new-chat-btn:hover { opacity: 0.88; }
+/* Icon color: new-chat-btn inherits white from its own color, keep that */
+.new-chat-btn svg { color: #ffffff; }
+
 .sidebar-section { padding: 16px 10px 4px; }
 .sidebar-section-label {
   font-size: 10px;
@@ -95,6 +99,7 @@ body {
 }
 .sidebar-item:hover { background: #252525; color: #ffffff; }
 .sidebar-item.active { background: #252525; color: #ffffff; }
+.sidebar-item svg { color: var(--color-icon); flex-shrink: 0; }
 .sidebar-item .dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
 .sidebar-item .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-item .badge {
@@ -189,6 +194,7 @@ body {
   transition: border-color 0.15s;
 }
 .repo-toggle:hover { border-color: var(--color-yellow); }
+.repo-toggle svg { color: var(--color-icon); }
 .repo-dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -218,6 +224,7 @@ body {
 .repo-dropdown button:hover { background: #2a2a2a; }
 .repo-dropdown button.selected { color: var(--color-yellow); background: #ec489910; }
 .repo-dropdown .add-repo { color: var(--color-yellow); border-top: 1px solid #2a2a2a; }
+.repo-dropdown svg { color: var(--color-icon); }
 .dropdown-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; display: inline-block; }
 .dropdown-meta { margin-left: auto; font-size: 11px; color: var(--color-muted); }
 
@@ -353,6 +360,7 @@ body {
   transition: border-color 0.12s, color 0.12s;
 }
 .input-chip:hover { border-color: #555; color: #cccccc; }
+.input-chip svg { color: var(--color-icon); }
 .send-btn {
   margin-left: auto;
   width: 34px; height: 34px;
@@ -367,4 +375,4 @@ body {
   transition: opacity 0.15s;
 }
 .send-btn:hover { opacity: 0.85; }
-.send-btn svg { width: 16px; height: 16px; fill: #ffffff; }
+.send-btn svg { width: 16px; height: 16px; fill: #3b82f6; }
