@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         forge: {
-          yellow: '#ec4899',
+          yellow: '#3b82f6',
           black: '#111111',
           card: '#1e1e1e',
           purple: '#9b59b6',
