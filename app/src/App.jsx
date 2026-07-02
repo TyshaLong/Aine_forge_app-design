@@ -14,6 +14,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [repo, setRepo] = useState('TyshaLong/advent-of-code-2025');
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState('ask');
   const inputRef = useRef(null);
 
   function prefill(text) {
@@ -51,12 +52,12 @@ export default function App() {
       <ShapeGridBackground />
       <Sidebar />
       <main className="main-area">
-        <TopBar />
+        <TopBar activeTab={activeTab} onTabChange={setActiveTab} />
         <RepoBar repo={repo} onSelect={setRepo} />
 
         <div className="messages-area">
           {messages.length === 0 ? (
-            <Hero onPrefill={prefill} />
+            <Hero onPrefill={prefill} onNavigateToCode={() => setActiveTab('code')} />
           ) : (
             <Messages messages={messages} />
           )}
