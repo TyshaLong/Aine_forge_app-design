@@ -106,7 +106,17 @@ body {
   border-radius: 999px;
 }
 .sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid #2a2a2a; }
-.back-home-link { margin-bottom: 8px; }
+.back-home-link {
+  margin-bottom: 8px;
+  color: #cccccc;
+  border: 1px solid transparent;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.back-home-link:hover {
+  background: #1e1e1e;
+  color: #ffffff;
+  border-color: #2a2a2a;
+}
 .upgrade-card { background: #ec489918; border: 1px solid #ec489930; border-radius: 10px; padding: 12px 14px; }
 .upgrade-card .title { font-size: 13px; font-weight: 600; color: #ffffff; }
 .upgrade-card p { font-size: 12px; color: #aaaaaa; margin: 2px 0 8px; }
