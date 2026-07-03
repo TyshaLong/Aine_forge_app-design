@@ -111,6 +111,17 @@
       padding: 12px 14px;
       border-top: 1px solid #2a2a2a;
     }
+    .back-home-link {
+      margin-bottom: 8px;
+      color: #cccccc;
+      border: 1px solid transparent;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .back-home-link:hover {
+      background: #1e1e1e;
+      color: #ffffff;
+      border-color: #2a2a2a;
+    }
     .upgrade-card {
       background: #f5c80018;
       border: 1px solid #f5c80030;
@@ -445,7 +456,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <a href="/" class="sidebar-item" style="margin-bottom:8px;">
+      <a href="/" class="sidebar-item back-home-link" title="Go back to the home page">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
