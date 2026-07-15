@@ -16,4 +16,10 @@ export default defineConfig(({ command }) => ({
       '/health': 'http://localhost:8787',
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+    css: false,
+  },
 }));
